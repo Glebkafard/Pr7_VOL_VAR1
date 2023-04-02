@@ -1,0 +1,47 @@
+import java.util.Scanner;
+
+public class ThreadNamePrinter {
+    private final Object lock = new Object();
+    private boolean interrupt = false;
+
+    public static void main(String[] args) throws InterruptedException {
+        ThreadNamePrinter printer = new ThreadNamePrinter();
+        printer.startThreads();
+        printer.listenToKeyPress();
+    }
+
+    private void startThreads() {
+        new Thread(this::printThreadName, "Thread1").start();
+        new Thread(this::printThreadName, "Thread2").start();
+        new Thread(this::printThreadName, "Thread3").start();
+    }
+
+    private void printThreadName() {
+        synchronized (lock) {
+            while (!interrupt) {
+                System.out.println(Thread.currentThread().getName());
+                try {
+                    lock.notify();
+                    lock.wait();
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }
+    }
+
+    private void listenToKeyPress() throws InterruptedException {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            if (scanner.hasNextLine()) {
+                interrupt = true;
+                synchronized (lock) {
+                    lock.notifyAll();
+                }
+                return;
+            }
+            Thread.sleep(100);
+        }
+    }
+}
